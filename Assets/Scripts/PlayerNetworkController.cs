@@ -12,12 +12,22 @@ public class PlayerNetworkController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         controller = Instantiate(playerPrefab, GameObject.Find("Players").transform);
-        controller.PlayerNetwork = this;
+        controller.SetUIName(playerName.Value.ToString());
+        playerName.OnValueChanged += OnValueChanged;
+
+        if (IsOwner && string.IsNullOrEmpty(controller.playerNameText.text))
+        {
+            UpdatePlayerNameServerRpc(NetworkButtonManager.Instance.PlayerName);
+        }
     }
 
+    private void OnValueChanged(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
+    {
+        controller.SetUIName(playerName.Value.ToString());
+    }
 
     [ServerRpc]
-    public void UpdatePlayerNameServerRpc(FixedString64Bytes newName)
+    private void UpdatePlayerNameServerRpc(FixedString64Bytes newName)
     {
         print("RPC method called");
         playerName.Value = newName;
