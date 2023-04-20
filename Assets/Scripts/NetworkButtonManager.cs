@@ -6,6 +6,7 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 public class NetworkButtonManager : MonoBehaviour
 {
@@ -14,13 +15,20 @@ public class NetworkButtonManager : MonoBehaviour
     [SerializeField] private Button clientButton;
     [SerializeField] private TextMeshProUGUI nameInput;
     [SerializeField] private TextMeshProUGUI ipInput;
+    [SerializeField] private TextMeshProUGUI numberOfPlayers;
 
     [Header("After join UI")] [SerializeField]
     private GameObject joinPanel;
 
     [SerializeField] private TextMeshProUGUI hostIpText;
 
+    private int currentNumberOfPlayers;
+    
+    private int currentNumberOfAccepted;
+
     public static NetworkButtonManager Instance { get; private set; }
+
+    public static Action<ulong> OnDrawerSelect;
 
     public string PlayerName { get; private set; }
 
@@ -29,6 +37,14 @@ public class NetworkButtonManager : MonoBehaviour
         Instance = this;
         hostButton.onClick.AddListener(OnHostButtonClick);
         clientButton.onClick.AddListener(OnClientButtonClick);
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectionChanged;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientConnectionChanged;
+    }
+
+    private void OnClientConnectionChanged(ulong obj)
+    {
+        currentNumberOfPlayers = NetworkManager.Singleton.ConnectedClientsIds.Count;
+        numberOfPlayers.text = currentNumberOfPlayers.ToString();
     }
 
     private void OnHostButtonClick()
@@ -37,7 +53,8 @@ public class NetworkButtonManager : MonoBehaviour
         PlayerName = nameInput.text;
 
         hostIpText.text = GetLocalIPAddress();
-        GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
+
+        // GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
         NetworkManager.Singleton.StartHost();
         joinPanel.SetActive(true);
     }
@@ -46,13 +63,13 @@ public class NetworkButtonManager : MonoBehaviour
     {
         buttonPanel.SetActive(false);
         PlayerName = nameInput.text;
-        GetComponent<UnityTransport>().ConnectionData.Address = ipInput.text.Substring(0, ipInput.text.Length - 1);
-        foreach (var c in ipInput.text.ToCharArray())
-        {
-            print(c);
-        }
 
+        var ipAddress = ipInput.text[..^1];
+        GetComponent<UnityTransport>().ConnectionData.Address = ipAddress;
         NetworkManager.Singleton.StartClient();
+
+        hostIpText.text = ipAddress;
+        joinPanel.SetActive(true);
     }
 
     public static string GetLocalIPAddress()
@@ -67,5 +84,21 @@ public class NetworkButtonManager : MonoBehaviour
         }
 
         throw new Exception("No network adapters with an IPv4 address in the system!");
+    }
+
+    [ContextMenu("Start game")]
+    public void StartGame()
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            var drawer = NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, currentNumberOfPlayers)];
+            SelectPlayerAsDrawerClientRpc(drawer);
+        }
+    }
+
+    [ClientRpc]
+    private void SelectPlayerAsDrawerClientRpc(ulong playerId)
+    {
+        OnDrawerSelect?.Invoke(playerId);
     }
 }

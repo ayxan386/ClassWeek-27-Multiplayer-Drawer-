@@ -1,37 +1,17 @@
 using TMPro;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerController : NetworkBehaviour
+public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI playerNameText;
+    [SerializeField] public TextMeshProUGUI playerNameText;
     private NetworkVariable<Vector3> points = new();
 
     private TextMeshProUGUI joinLog;
-    public PlayerNetworkController PlayerNetwork { get; set; }
 
-    private void Start()
-    {
-        PlayerNetwork.playerName.OnValueChanged += OnPlayerNameChanged;
-    }
-
-    private void OnPlayerNameChanged(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
+    public void SetUIName(string name)
     {
         print("Update event recieved");
-        playerNameText.text = newvalue.ToString();
-    }
-
-    void Update()
-    {
-        if (IsOwner && string.IsNullOrEmpty(playerNameText.text))
-        {
-            PlayerNetwork.UpdatePlayerNameServerRpc(NetworkButtonManager.Instance.PlayerName);
-        }
-
-        if (IsOwner && Input.GetMouseButton(0))
-        {
-            // UpdatePointsServerRpc(Random.insideUnitSphere * 3);
-        }
+        playerNameText.text = name;
     }
 }
