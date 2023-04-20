@@ -8,8 +8,8 @@ public class PlayerNetworkController : NetworkBehaviour
 
     public NetworkVariable<FixedString64Bytes> playerName = new();
     private NetworkVariable<Vector2> pointHolder = new();
-    private NetworkVariable<bool> resetBrushEvent = new();
-    private NetworkVariable<bool> createBrushEvent = new();
+    private NetworkVariable<int> resetBrushEvent = new();
+    private NetworkVariable<Vector2> createBrushEvent = new();
 
     private PlayerController controller;
     private bool isDrawer;
@@ -31,18 +31,17 @@ public class PlayerNetworkController : NetworkBehaviour
 
         if (IsOwner)
         {
-            NetworkButtonManager.OnDrawerSelect += OnDrawerSelect;
+            PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
         }
     }
 
-    private void OnBrushCreate(bool previousvalue, bool newvalue)
+    private void OnBrushCreate(Vector2 previousvalue, Vector2 mousePos)
     {
-        print("Brush create event received: " + newvalue);
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        print("Brush create event received: " + mousePos);
         DrawingSingleton.Instance.CreateBrush(mousePos);
     }
 
-    private void OnResetBrush(bool previousvalue, bool newvalue)
+    private void OnResetBrush(int previousvalue, int newvalue)
     {
         print("Brush reset event received: " + newvalue);
         DrawingSingleton.Instance.ResetBrush();
@@ -50,7 +49,6 @@ public class PlayerNetworkController : NetworkBehaviour
 
     private void OnPointAdded(Vector2 previousvalue, Vector2 point)
     {
-        // print("Point add event received: " + point);
         lastPos = point;
         DrawingSingleton.Instance.AddAPoint(lastPos);
     }
@@ -59,6 +57,7 @@ public class PlayerNetworkController : NetworkBehaviour
     {
         print("Drawer selection event received: " + drawerId);
         isDrawer = OwnerClientId == drawerId;
+        DrawingSingleton.Instance.ResetCanvas();
     }
 
     private void OnNameChanged(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
@@ -75,9 +74,10 @@ public class PlayerNetworkController : NetworkBehaviour
 
     public void Draw()
     {
+        print("Draw method called");
         if (Input.GetMouseButtonDown(0))
         {
-            CreateBrushServerRpc();
+            CreateBrushServerRpc(Camera.main.ScreenToWorldPoint(Input.mousePosition));
         }
         else if (Input.GetMouseButton(0))
         {
@@ -85,6 +85,7 @@ public class PlayerNetworkController : NetworkBehaviour
         }
         else
         {
+            print("Resetting");
             ResetBrushServerRpc();
         }
     }
@@ -108,13 +109,14 @@ public class PlayerNetworkController : NetworkBehaviour
     [ServerRpc]
     private void ResetBrushServerRpc()
     {
-        resetBrushEvent.Value = true;
+        if (DrawingSingleton.Instance.BrushExists())
+            resetBrushEvent.Value = Random.Range(0, 99999);
     }
 
     [ServerRpc]
-    private void CreateBrushServerRpc()
+    private void CreateBrushServerRpc(Vector3 mousePos)
     {
-        createBrushEvent.Value = true;
+        createBrushEvent.Value = mousePos;
     }
 
     private void Update()

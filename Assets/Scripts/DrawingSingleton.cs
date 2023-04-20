@@ -35,4 +35,17 @@ public class DrawingSingleton : MonoBehaviour
     {
         currentLineRenderer = null;
     }
+
+    public bool BrushExists()
+    {
+        return currentLineRenderer != null;
+    }
+
+    public void ResetCanvas()
+    {
+        for (int i = 0; i < brushHolder.childCount; i++)
+        {
+            Destroy(brushHolder.GetChild(i).gameObject);
+        }
+    }
 }
