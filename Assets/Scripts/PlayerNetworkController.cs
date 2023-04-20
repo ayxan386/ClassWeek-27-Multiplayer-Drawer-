@@ -1,18 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerNetworkController : MonoBehaviour
+public class PlayerNetworkController : NetworkBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField] private PlayerController playerPrefab;
+
+    public NetworkVariable<FixedString64Bytes> playerName = new();
+    private PlayerController controller;
+
+    public override void OnNetworkSpawn()
     {
-        
+        controller = Instantiate(playerPrefab, GameObject.Find("Players").transform);
+        controller.PlayerNetwork = this;
     }
 
-    // Update is called once per frame
-    void Update()
+
+    [ServerRpc]
+    public void UpdatePlayerNameServerRpc(FixedString64Bytes newName)
     {
-        
+        print("RPC method called");
+        playerName.Value = newName;
     }
 }

@@ -35,17 +35,23 @@ public class NetworkButtonManager : MonoBehaviour
     {
         buttonPanel.SetActive(false);
         PlayerName = nameInput.text;
-        NetworkManager.Singleton.StartHost();
 
-        joinPanel.SetActive(true);
         hostIpText.text = GetLocalIPAddress();
+        GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
+        NetworkManager.Singleton.StartHost();
+        joinPanel.SetActive(true);
     }
 
     private void OnClientButtonClick()
     {
         buttonPanel.SetActive(false);
         PlayerName = nameInput.text;
-        GetComponent<UnityTransport>().ConnectionData.Address = ipInput.text;
+        GetComponent<UnityTransport>().ConnectionData.Address = ipInput.text.Substring(0, ipInput.text.Length - 1);
+        foreach (var c in ipInput.text.ToCharArray())
+        {
+            print(c);
+        }
+
         NetworkManager.Singleton.StartClient();
     }
 
