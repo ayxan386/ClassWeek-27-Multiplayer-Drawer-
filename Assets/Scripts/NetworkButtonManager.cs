@@ -14,6 +14,7 @@ public class NetworkButtonManager : MonoBehaviour
     [SerializeField] private Button clientButton;
     [SerializeField] private TextMeshProUGUI nameInput;
     [SerializeField] private TextMeshProUGUI ipInput;
+    [SerializeField] private TextMeshProUGUI numberOfPlayers;
 
     [Header("After join UI")] [SerializeField]
     private GameObject joinPanel;
@@ -29,6 +30,13 @@ public class NetworkButtonManager : MonoBehaviour
         Instance = this;
         hostButton.onClick.AddListener(OnHostButtonClick);
         clientButton.onClick.AddListener(OnClientButtonClick);
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectionChanged;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientConnectionChanged;
+    }
+
+    private void OnClientConnectionChanged(ulong obj)
+    {
+        numberOfPlayers.text = NetworkManager.Singleton.ConnectedClientsIds.Count.ToString();
     }
 
     private void OnHostButtonClick()
@@ -36,7 +44,8 @@ public class NetworkButtonManager : MonoBehaviour
         buttonPanel.SetActive(false);
         PlayerName = nameInput.text;
 
-        // hostIpText.text = GetLocalIPAddress();
+        hostIpText.text = GetLocalIPAddress();
+        
         // GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
         NetworkManager.Singleton.StartHost();
         joinPanel.SetActive(true);
