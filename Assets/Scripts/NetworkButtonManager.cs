@@ -6,6 +6,7 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 public class NetworkButtonManager : MonoBehaviour
 {
@@ -21,7 +22,13 @@ public class NetworkButtonManager : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI hostIpText;
 
+    private int currentNumberOfPlayers;
+    
+    private int currentNumberOfAccepted;
+
     public static NetworkButtonManager Instance { get; private set; }
+
+    public static Action<ulong> OnDrawerSelect;
 
     public string PlayerName { get; private set; }
 
@@ -36,7 +43,8 @@ public class NetworkButtonManager : MonoBehaviour
 
     private void OnClientConnectionChanged(ulong obj)
     {
-        numberOfPlayers.text = NetworkManager.Singleton.ConnectedClientsIds.Count.ToString();
+        currentNumberOfPlayers = NetworkManager.Singleton.ConnectedClientsIds.Count;
+        numberOfPlayers.text = currentNumberOfPlayers.ToString();
     }
 
     private void OnHostButtonClick()
@@ -45,7 +53,7 @@ public class NetworkButtonManager : MonoBehaviour
         PlayerName = nameInput.text;
 
         hostIpText.text = GetLocalIPAddress();
-        
+
         // GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
         NetworkManager.Singleton.StartHost();
         joinPanel.SetActive(true);
@@ -76,5 +84,21 @@ public class NetworkButtonManager : MonoBehaviour
         }
 
         throw new Exception("No network adapters with an IPv4 address in the system!");
+    }
+
+    [ContextMenu("Start game")]
+    public void StartGame()
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            var drawer = NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, currentNumberOfPlayers)];
+            SelectPlayerAsDrawerClientRpc(drawer);
+        }
+    }
+
+    [ClientRpc]
+    private void SelectPlayerAsDrawerClientRpc(ulong playerId)
+    {
+        OnDrawerSelect?.Invoke(playerId);
     }
 }
