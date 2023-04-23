@@ -36,17 +36,14 @@ public class PlayerNetworkController : NetworkBehaviour
             UpdatePlayerNameServerRpc(NetworkButtonManager.Instance.PlayerName);
         }
 
-        if (IsOwner)
-        {
-            PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
-        }
+        PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
     }
 
     private void OnAcceptButtonPressed(bool obj)
     {
         if (IsOwner)
         {
-            
+            OnPlayerAcceptServerRpc(OwnerClientId);
         }
     }
 
@@ -74,11 +71,10 @@ public class PlayerNetworkController : NetworkBehaviour
         isDrawer = OwnerClientId == drawerId;
         if (isDrawer)
         {
-            eventMessageText.text = IsOwner ? "You are the drawer!!" : $"{playerName.Value} is the drawer";
+            eventMessageText.text =IsOwner ? "You are the drawer" :  $"{playerName.Value} is the drawer!!!"; 
             eventMessageText.gameObject.GetComponent<Animator>().SetTrigger("scale");
+            DrawingSingleton.Instance.ResetCanvas();
         }
-
-        DrawingSingleton.Instance.ResetCanvas();
     }
 
     private void OnNameChanged(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
@@ -136,6 +132,12 @@ public class PlayerNetworkController : NetworkBehaviour
     private void CreateBrushServerRpc(Vector3 mousePos)
     {
         createBrushEvent.Value = mousePos;
+    }
+
+    [ServerRpc]
+    public void OnPlayerAcceptServerRpc(ulong playerId)
+    {
+        PlayerLobbyController.Instance.OnStartButtonClicked(playerId);
     }
 
     private void Update()

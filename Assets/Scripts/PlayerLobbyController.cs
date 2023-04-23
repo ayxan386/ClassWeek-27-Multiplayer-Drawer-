@@ -27,14 +27,6 @@ public class PlayerLobbyController : NetworkBehaviour
         }
     }
 
-    public void AcceptButtonPressed()
-    {
-        if (IsOwner)
-        {
-            OnStartButtonClickedServerRpc(OwnerClientId);
-        }
-    }
-
     private void OnPlayerCountChange(int previousvalue, int newvalue)
     {
         numberOfPlayers.text = currentNumberOfPlayers.Value.ToString();
@@ -52,8 +44,7 @@ public class PlayerLobbyController : NetworkBehaviour
         if (NetworkManager.Singleton.IsServer)
         {
             var drawer =
-                NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, currentNumberOfPlayers.Value)];
-            joinPanel.SetActive(false);
+                NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, acceptedPlayers.Count)];
             acceptedPlayers.Clear();
             SelectPlayerAsDrawerClientRpc(drawer);
         }
@@ -62,11 +53,11 @@ public class PlayerLobbyController : NetworkBehaviour
     [ClientRpc]
     private void SelectPlayerAsDrawerClientRpc(ulong playerId)
     {
+        joinPanel.SetActive(false);
         OnDrawerSelect?.Invoke(playerId);
     }
 
-    [ServerRpc]
-    public void OnStartButtonClickedServerRpc(ulong playerId)
+    public void OnStartButtonClicked(ulong playerId)
     {
         acceptedPlayers.Add(playerId);
         print("Current number of accepted players: " + acceptedPlayers.Count);
