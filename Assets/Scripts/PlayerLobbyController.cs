@@ -2,15 +2,17 @@ using System;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class PlayerLobbyController : NetworkBehaviour
 {
     [SerializeField] private TextMeshProUGUI numberOfPlayers;
     [SerializeField] private GameObject joinPanel;
+    [SerializeField] private Button startGame;
 
     private NetworkVariable<int> currentNumberOfPlayers = new();
-
+    private int currentNumberOfAccepted = 0;
     public static PlayerLobbyController Instance { get; private set; }
 
     public static Action<ulong> OnDrawerSelect;
@@ -19,6 +21,7 @@ public class PlayerLobbyController : NetworkBehaviour
     {
         Instance = this;
         currentNumberOfPlayers.OnValueChanged += OnPlayerCountChange;
+        startGame.onClick.AddListener(OnStartButtonClickedServerRpc);
         if (IsServer || IsHost)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectionChanged;
@@ -45,6 +48,7 @@ public class PlayerLobbyController : NetworkBehaviour
             var drawer =
                 NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, currentNumberOfPlayers.Value)];
             joinPanel.SetActive(false);
+            currentNumberOfAccepted = 0;
             SelectPlayerAsDrawerClientRpc(drawer);
         }
     }
@@ -53,5 +57,15 @@ public class PlayerLobbyController : NetworkBehaviour
     private void SelectPlayerAsDrawerClientRpc(ulong playerId)
     {
         OnDrawerSelect?.Invoke(playerId);
+    }
+
+    [ServerRpc]
+    private void OnStartButtonClickedServerRpc()
+    {
+        currentNumberOfAccepted++;
+        if (IsServer && currentNumberOfAccepted == currentNumberOfPlayers.Value)
+        {
+            StartGame();
+        }
     }
 }
