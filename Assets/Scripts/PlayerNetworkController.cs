@@ -12,12 +12,14 @@ public class PlayerNetworkController : NetworkBehaviour
     private NetworkVariable<Vector2> pointHolder = new();
     private NetworkVariable<int> resetBrushEvent = new();
     private NetworkVariable<Vector2> createBrushEvent = new();
+    private NetworkVariable<FixedString64Bytes> lastAnswer = new();
 
     private PlayerController controller;
     private bool isDrawer;
     Vector2 lastPos;
     private TextMeshProUGUI eventMessageText;
     private NetworkAnimator eventMessageAnimator;
+    private TMP_InputField answerInputField;
 
     public override void OnNetworkSpawn()
     {
@@ -28,6 +30,7 @@ public class PlayerNetworkController : NetworkBehaviour
         resetBrushEvent.OnValueChanged += OnResetBrush;
         createBrushEvent.OnValueChanged += OnBrushCreate;
         StartButton.OnAcceptButtonPressed += OnAcceptButtonPressed;
+        lastAnswer.OnValueChanged += OnAnswerSubmit;
 
         eventMessageText = GameObject.Find("Event message").GetComponent<TextMeshProUGUI>();
 
@@ -37,6 +40,11 @@ public class PlayerNetworkController : NetworkBehaviour
         }
 
         PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+    }
+
+    private void OnAnswerSubmit(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
+    {
+        controller.AddAnswerToUI(newvalue.ToString());
     }
 
     private void OnAcceptButtonPressed(bool obj)
@@ -69,11 +77,25 @@ public class PlayerNetworkController : NetworkBehaviour
     {
         print("Drawer selection event received: " + drawerId);
         isDrawer = OwnerClientId == drawerId;
+        controller.UpdateBackgroundColor(isDrawer);
         if (isDrawer)
         {
-            eventMessageText.text =IsOwner ? "You are the drawer" :  $"{playerName.Value} is the drawer!!!"; 
+            eventMessageText.text = IsOwner ? "You are the drawer" : $"{playerName.Value} is the drawer!!!";
             eventMessageText.gameObject.GetComponent<Animator>().SetTrigger("scale");
             DrawingSingleton.Instance.ResetCanvas();
+        }
+
+        if (IsOwner && !isDrawer)
+        {
+            var gameStartedMenu = NetworkButtonManager.Instance.GameStartMenu;
+            gameStartedMenu.SetActive(true);
+            answerInputField = gameStartedMenu.transform.GetComponentInChildren<TMP_InputField>();
+            answerInputField.onSubmit.RemoveAllListeners();
+            answerInputField.onSubmit.AddListener((ans) =>
+            {
+                answerInputField.text = "";
+                OnPlayerAnswerSubmitServerRpc(ans);
+            });
         }
     }
 
@@ -138,6 +160,12 @@ public class PlayerNetworkController : NetworkBehaviour
     public void OnPlayerAcceptServerRpc(ulong playerId)
     {
         PlayerLobbyController.Instance.OnStartButtonClicked(playerId);
+    }
+
+    [ServerRpc]
+    public void OnPlayerAnswerSubmitServerRpc(string word)
+    {
+        lastAnswer.Value = word;
     }
 
     private void Update()
