@@ -19,6 +19,11 @@ public class NetworkButtonManager : MonoBehaviour
     private GameObject joinPanel;
 
     [SerializeField] private TextMeshProUGUI hostIpText;
+    
+    [Header("On going game UI")]
+    [SerializeField] private GameObject gameStartMenu;
+
+    public GameObject GameStartMenu => gameStartMenu;
 
     public static NetworkButtonManager Instance { get; private set; }
 
@@ -68,6 +73,12 @@ public class NetworkButtonManager : MonoBehaviour
         }
 
         throw new Exception("No network adapters with an IPv4 address in the system!");
+    }
+
+    public void SetPlayerWaitingLayout()
+    {
+        gameStartMenu.SetActive(false);
+        joinPanel.SetActive(true);
     }
 
 }

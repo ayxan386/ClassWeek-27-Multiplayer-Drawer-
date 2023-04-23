@@ -1,3 +1,4 @@
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -10,10 +11,14 @@ public class PlayerNetworkController : NetworkBehaviour
     private NetworkVariable<Vector2> pointHolder = new();
     private NetworkVariable<int> resetBrushEvent = new();
     private NetworkVariable<Vector2> createBrushEvent = new();
+    private NetworkVariable<FixedString64Bytes> lastAnswer = new();
 
     private PlayerController controller;
     private bool isDrawer;
     Vector2 lastPos;
+    private TextMeshProUGUI eventMessageText;
+    private Animator eventMessageAnimator;
+    private TMP_InputField answerInputField;
 
     public override void OnNetworkSpawn()
     {
@@ -23,15 +28,54 @@ public class PlayerNetworkController : NetworkBehaviour
         pointHolder.OnValueChanged += OnPointAdded;
         resetBrushEvent.OnValueChanged += OnResetBrush;
         createBrushEvent.OnValueChanged += OnBrushCreate;
+        StartButton.OnAcceptButtonPressed += OnAcceptButtonPressed;
+        lastAnswer.OnValueChanged += OnAnswerSubmit;
+
+        eventMessageText = GameObject.Find("Event message").GetComponent<TextMeshProUGUI>();
+        eventMessageAnimator = eventMessageText.gameObject.GetComponent<Animator>();
 
         if (IsOwner && string.IsNullOrEmpty(controller.playerNameText.text))
         {
             UpdatePlayerNameServerRpc(NetworkButtonManager.Instance.PlayerName);
         }
 
+        PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+        PlayerLobbyController.OnWordSelection += OnWordSelection;
+        PlayerLobbyController.OnPlayerVictory += OnPlayerVictory;
+    }
+
+    private void OnPlayerVictory(string ans, ulong playerId)
+    {
+        if (playerId == OwnerClientId)
+            ShowMessage(IsOwner ? "You won!!" : $"{playerName.Value} won\n the word was {ans}");
+
+        if (IsOwner) NetworkButtonManager.Instance.SetPlayerWaitingLayout();
+    }
+
+    private void OnWordSelection(string word)
+    {
+        if (IsOwner && isDrawer)
+        {
+            ShowMessage($"The word is \n {word}");
+        }
+    }
+
+    private void ShowMessage(string message)
+    {
+        eventMessageText.text = message;
+        eventMessageAnimator.SetTrigger("scale");
+    }
+
+    private void OnAnswerSubmit(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
+    {
+        controller.AddAnswerToUI(newvalue.ToString());
+    }
+
+    private void OnAcceptButtonPressed(bool obj)
+    {
         if (IsOwner)
         {
-            PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+            OnPlayerAcceptServerRpc(OwnerClientId);
         }
     }
 
@@ -57,7 +101,25 @@ public class PlayerNetworkController : NetworkBehaviour
     {
         print("Drawer selection event received: " + drawerId);
         isDrawer = OwnerClientId == drawerId;
-        DrawingSingleton.Instance.ResetCanvas();
+        controller.UpdateBackgroundColor(isDrawer);
+        if (isDrawer)
+        {
+            ShowMessage(IsOwner ? "You are the drawer" : $"{playerName.Value} is the drawer!!!");
+            DrawingSingleton.Instance.ResetCanvas();
+        }
+
+        if (IsOwner && !isDrawer)
+        {
+            var gameStartedMenu = NetworkButtonManager.Instance.GameStartMenu;
+            gameStartedMenu.SetActive(true);
+            answerInputField = gameStartedMenu.transform.GetComponentInChildren<TMP_InputField>();
+            answerInputField.onSubmit.RemoveAllListeners();
+            answerInputField.onSubmit.AddListener((ans) =>
+            {
+                answerInputField.text = "";
+                OnPlayerAnswerSubmitServerRpc(ans);
+            });
+        }
     }
 
     private void OnNameChanged(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
@@ -68,13 +130,12 @@ public class PlayerNetworkController : NetworkBehaviour
     [ServerRpc]
     private void UpdatePlayerNameServerRpc(FixedString64Bytes newName)
     {
-        print("RPC method called");
+        print("Updating player name method called");
         playerName.Value = newName;
     }
 
-    public void Draw()
+    private void Draw()
     {
-        print("Draw method called");
         if (Input.GetMouseButtonDown(0))
         {
             CreateBrushServerRpc(Camera.main.ScreenToWorldPoint(Input.mousePosition));
@@ -85,12 +146,11 @@ public class PlayerNetworkController : NetworkBehaviour
         }
         else
         {
-            print("Resetting");
             ResetBrushServerRpc();
         }
     }
 
-    void PointToMousePos()
+    private void PointToMousePos()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         if (lastPos != mousePos)
@@ -117,6 +177,19 @@ public class PlayerNetworkController : NetworkBehaviour
     private void CreateBrushServerRpc(Vector3 mousePos)
     {
         createBrushEvent.Value = mousePos;
+    }
+
+    [ServerRpc]
+    public void OnPlayerAcceptServerRpc(ulong playerId)
+    {
+        PlayerLobbyController.Instance.OnStartButtonClicked(playerId);
+    }
+
+    [ServerRpc]
+    public void OnPlayerAnswerSubmitServerRpc(FixedString64Bytes word)
+    {
+        lastAnswer.Value = word;
+        PlayerLobbyController.Instance.CompareAnswers(word.ToString().ToLower(), OwnerClientId);
     }
 
     private void Update()

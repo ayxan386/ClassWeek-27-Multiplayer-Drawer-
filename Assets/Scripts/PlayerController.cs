@@ -1,17 +1,29 @@
 using TMPro;
-using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] public TextMeshProUGUI playerNameText;
-    private NetworkVariable<Vector3> points = new();
+    [SerializeField] public TextMeshProUGUI playerAnswers;
+    [SerializeField] private Image backgroundImage;
+    [SerializeField] private Color drawer;
+    [SerializeField] private Color defaultColor;
 
     private TextMeshProUGUI joinLog;
 
     public void SetUIName(string name)
     {
-        print("Update event recieved");
         playerNameText.text = name;
+    }
+
+    public void AddAnswerToUI(string word)
+    {
+        playerAnswers.text = word + "\n" + playerAnswers.text;
+    }
+
+    public void UpdateBackgroundColor(bool isDrawer)
+    {
+        backgroundImage.color = isDrawer ? drawer : defaultColor;
     }
 }
