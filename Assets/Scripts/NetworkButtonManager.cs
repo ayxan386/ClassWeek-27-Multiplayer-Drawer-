@@ -37,7 +37,8 @@ public class NetworkButtonManager : MonoBehaviour
         PlayerName = nameInput.text;
 
         hostIpText.text = GetLocalIPAddress();
-        GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
+
+        // GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
         NetworkManager.Singleton.StartHost();
         joinPanel.SetActive(true);
     }
@@ -46,13 +47,13 @@ public class NetworkButtonManager : MonoBehaviour
     {
         buttonPanel.SetActive(false);
         PlayerName = nameInput.text;
-        GetComponent<UnityTransport>().ConnectionData.Address = ipInput.text.Substring(0, ipInput.text.Length - 1);
-        foreach (var c in ipInput.text.ToCharArray())
-        {
-            print(c);
-        }
 
+        var ipAddress = ipInput.text[..^1];
+        GetComponent<UnityTransport>().ConnectionData.Address = ipAddress;
         NetworkManager.Singleton.StartClient();
+
+        hostIpText.text = ipAddress;
+        joinPanel.SetActive(true);
     }
 
     public static string GetLocalIPAddress()
@@ -68,4 +69,5 @@ public class NetworkButtonManager : MonoBehaviour
 
         throw new Exception("No network adapters with an IPv4 address in the system!");
     }
+
 }
