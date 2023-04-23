@@ -1,5 +1,7 @@
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 
 public class PlayerNetworkController : NetworkBehaviour
@@ -14,6 +16,8 @@ public class PlayerNetworkController : NetworkBehaviour
     private PlayerController controller;
     private bool isDrawer;
     Vector2 lastPos;
+    private TextMeshProUGUI eventMessageText;
+    private NetworkAnimator eventMessageAnimator;
 
     public override void OnNetworkSpawn()
     {
@@ -23,6 +27,9 @@ public class PlayerNetworkController : NetworkBehaviour
         pointHolder.OnValueChanged += OnPointAdded;
         resetBrushEvent.OnValueChanged += OnResetBrush;
         createBrushEvent.OnValueChanged += OnBrushCreate;
+        StartButton.OnAcceptButtonPressed += OnAcceptButtonPressed;
+
+        eventMessageText = GameObject.Find("Event message").GetComponent<TextMeshProUGUI>();
 
         if (IsOwner && string.IsNullOrEmpty(controller.playerNameText.text))
         {
@@ -32,6 +39,14 @@ public class PlayerNetworkController : NetworkBehaviour
         if (IsOwner)
         {
             PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+        }
+    }
+
+    private void OnAcceptButtonPressed(bool obj)
+    {
+        if (IsOwner)
+        {
+            
         }
     }
 
@@ -57,6 +72,12 @@ public class PlayerNetworkController : NetworkBehaviour
     {
         print("Drawer selection event received: " + drawerId);
         isDrawer = OwnerClientId == drawerId;
+        if (isDrawer)
+        {
+            eventMessageText.text = IsOwner ? "You are the drawer!!" : $"{playerName.Value} is the drawer";
+            eventMessageText.gameObject.GetComponent<Animator>().SetTrigger("scale");
+        }
+
         DrawingSingleton.Instance.ResetCanvas();
     }
 
@@ -68,13 +89,12 @@ public class PlayerNetworkController : NetworkBehaviour
     [ServerRpc]
     private void UpdatePlayerNameServerRpc(FixedString64Bytes newName)
     {
-        print("RPC method called");
+        print("Updating player name method called");
         playerName.Value = newName;
     }
 
-    public void Draw()
+    private void Draw()
     {
-        print("Draw method called");
         if (Input.GetMouseButtonDown(0))
         {
             CreateBrushServerRpc(Camera.main.ScreenToWorldPoint(Input.mousePosition));
@@ -85,12 +105,11 @@ public class PlayerNetworkController : NetworkBehaviour
         }
         else
         {
-            print("Resetting");
             ResetBrushServerRpc();
         }
     }
 
-    void PointToMousePos()
+    private void PointToMousePos()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         if (lastPos != mousePos)

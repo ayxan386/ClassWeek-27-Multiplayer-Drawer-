@@ -1309,7 +1309,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numberOfPlayers: {fileID: 405138712}
   joinPanel: {fileID: 1563320774}
-  startGame: {fileID: 800614489}
 --- !u!1 &552486545
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,6 +1706,7 @@ GameObject:
   - component: {fileID: 800614491}
   - component: {fileID: 800614490}
   - component: {fileID: 800614489}
+  - component: {fileID: 800614492}
   m_Layer: 5
   m_Name: Start
   m_TagString: Untagged
@@ -1817,6 +1817,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 800614487}
   m_CullTransparentMesh: 1
+--- !u!114 &800614492
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800614487}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae778b5df4f12544bab4197100fa8755, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startGame: {fileID: 800614489}
 --- !u!1 &953202100
 GameObject:
   m_ObjectHideFlags: 0
@@ -1829,6 +1842,7 @@ GameObject:
   - component: {fileID: 953202104}
   - component: {fileID: 953202103}
   - component: {fileID: 953202102}
+  - component: {fileID: 953202105}
   m_Layer: 5
   m_Name: Event message
   m_TagString: Untagged
@@ -1923,15 +1937,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
+  m_fontSize: 34.1
   m_fontSizeBase: 36
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_fontStyle: 3
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -1973,6 +1987,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 953202100}
   m_CullTransparentMesh: 1
+--- !u!114 &953202105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953202100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TransitionStateInfoList:
+  - Layer: 0
+    OriginatingState: -601574123
+    DestinationState: 1184796108
+    TransitionDuration: 0
+    TriggerNameHash: -330947196
+    TransitionIndex: 0
+  m_Animator: {fileID: 953202102}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
