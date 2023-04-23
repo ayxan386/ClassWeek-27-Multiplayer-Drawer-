@@ -1,7 +1,6 @@
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
 
 public class PlayerNetworkController : NetworkBehaviour
@@ -18,7 +17,7 @@ public class PlayerNetworkController : NetworkBehaviour
     private bool isDrawer;
     Vector2 lastPos;
     private TextMeshProUGUI eventMessageText;
-    private NetworkAnimator eventMessageAnimator;
+    private Animator eventMessageAnimator;
     private TMP_InputField answerInputField;
 
     public override void OnNetworkSpawn()
@@ -33,6 +32,7 @@ public class PlayerNetworkController : NetworkBehaviour
         lastAnswer.OnValueChanged += OnAnswerSubmit;
 
         eventMessageText = GameObject.Find("Event message").GetComponent<TextMeshProUGUI>();
+        eventMessageAnimator = eventMessageText.gameObject.GetComponent<Animator>();
 
         if (IsOwner && string.IsNullOrEmpty(controller.playerNameText.text))
         {
@@ -40,6 +40,30 @@ public class PlayerNetworkController : NetworkBehaviour
         }
 
         PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+        PlayerLobbyController.OnWordSelection += OnWordSelection;
+        PlayerLobbyController.OnPlayerVictory += OnPlayerVictory;
+    }
+
+    private void OnPlayerVictory(string ans, ulong playerId)
+    {
+        if (playerId == OwnerClientId)
+            ShowMessage(IsOwner ? "You won!!" : $"{playerName.Value} won\n the word was {ans}");
+
+        if (IsOwner) NetworkButtonManager.Instance.SetPlayerWaitingLayout();
+    }
+
+    private void OnWordSelection(string word)
+    {
+        if (IsOwner && isDrawer)
+        {
+            ShowMessage($"The word is \n {word}");
+        }
+    }
+
+    private void ShowMessage(string message)
+    {
+        eventMessageText.text = message;
+        eventMessageAnimator.SetTrigger("scale");
     }
 
     private void OnAnswerSubmit(FixedString64Bytes previousvalue, FixedString64Bytes newvalue)
@@ -80,8 +104,7 @@ public class PlayerNetworkController : NetworkBehaviour
         controller.UpdateBackgroundColor(isDrawer);
         if (isDrawer)
         {
-            eventMessageText.text = IsOwner ? "You are the drawer" : $"{playerName.Value} is the drawer!!!";
-            eventMessageText.gameObject.GetComponent<Animator>().SetTrigger("scale");
+            ShowMessage(IsOwner ? "You are the drawer" : $"{playerName.Value} is the drawer!!!");
             DrawingSingleton.Instance.ResetCanvas();
         }
 
@@ -163,9 +186,10 @@ public class PlayerNetworkController : NetworkBehaviour
     }
 
     [ServerRpc]
-    public void OnPlayerAnswerSubmitServerRpc(string word)
+    public void OnPlayerAnswerSubmitServerRpc(FixedString64Bytes word)
     {
         lastAnswer.Value = word;
+        PlayerLobbyController.Instance.CompareAnswers(word.ToString().ToLower(), OwnerClientId);
     }
 
     private void Update()

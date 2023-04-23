@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -15,6 +16,9 @@ public class PlayerLobbyController : NetworkBehaviour
     public static PlayerLobbyController Instance { get; private set; }
 
     public static Action<ulong> OnDrawerSelect;
+    public static Action<string> OnWordSelection;
+    public static Action<string, ulong> OnPlayerVictory;
+    private string theAnswer;
 
     public override void OnNetworkSpawn()
     {
@@ -47,7 +51,32 @@ public class PlayerLobbyController : NetworkBehaviour
                 NetworkManager.Singleton.ConnectedClientsIds[Random.Range(0, acceptedPlayers.Count)];
             acceptedPlayers.Clear();
             SelectPlayerAsDrawerClientRpc(drawer);
+            Invoke("SelectWord", 3);
         }
+    }
+
+    private void SelectWord()
+    {
+        var words = Resources.Load<TextAsset>("Words").text.Split("\n");
+        var wordIndex = Random.Range(0, words.Length);
+        theAnswer = words[wordIndex].ToLower();
+        SendSelectedWordClientRpc(theAnswer);
+    }
+
+    public void CompareAnswers(string word, ulong playerId)
+    {
+        print($"the submitted word : {word} the answer was {theAnswer}");
+        if (word.Trim() == theAnswer.Trim())
+        {
+            print("Words match");
+            SendPlayerWonClientRpc(word, playerId);
+        }
+    }
+
+    [ClientRpc]
+    private void SendSelectedWordClientRpc(FixedString64Bytes word)
+    {
+        OnWordSelection?.Invoke(word.ToString());
     }
 
     [ClientRpc]
@@ -56,6 +85,14 @@ public class PlayerLobbyController : NetworkBehaviour
         joinPanel.SetActive(false);
         OnDrawerSelect?.Invoke(playerId);
     }
+
+    [ClientRpc]
+    private void SendPlayerWonClientRpc(FixedString64Bytes answer, ulong playerId)
+    {
+        print("Received victory event");
+        OnPlayerVictory?.Invoke(answer.ToString(), playerId);
+    }
+
 
     public void OnStartButtonClicked(ulong playerId)
     {
