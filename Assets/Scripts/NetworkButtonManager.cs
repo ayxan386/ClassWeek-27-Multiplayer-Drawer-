@@ -43,7 +43,7 @@ public class NetworkButtonManager : MonoBehaviour
 
         hostIpText.text = GetLocalIPAddress();
 
-        // GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
+        GetComponent<UnityTransport>().ConnectionData.Address = hostIpText.text;
         NetworkManager.Singleton.StartHost();
         joinPanel.SetActive(true);
     }
