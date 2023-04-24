@@ -49,6 +49,7 @@ public class PlayerNetworkController : NetworkBehaviour
         if (playerId == OwnerClientId)
             ShowMessage(IsOwner ? "You won!!" : $"{playerName.Value} won\n the word was {ans}");
 
+        controller.ResetAnswers();
         if (IsOwner) NetworkButtonManager.Instance.SetPlayerWaitingLayout();
     }
 
