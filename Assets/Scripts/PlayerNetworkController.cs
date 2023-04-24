@@ -102,6 +102,7 @@ public class PlayerNetworkController : NetworkBehaviour
         print("Drawer selection event received: " + drawerId);
         isDrawer = OwnerClientId == drawerId;
         controller.UpdateBackgroundColor(isDrawer);
+        controller.ResetAnswers();
         if (isDrawer)
         {
             ShowMessage(IsOwner ? "You are the drawer" : $"{playerName.Value} is the drawer!!!");
@@ -117,6 +118,7 @@ public class PlayerNetworkController : NetworkBehaviour
             answerInputField.onSubmit.AddListener((ans) =>
             {
                 answerInputField.text = "";
+                answerInputField.Select();
                 OnPlayerAnswerSubmitServerRpc(ans);
             });
         }

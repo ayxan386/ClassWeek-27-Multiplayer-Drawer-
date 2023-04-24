@@ -26,4 +26,9 @@ public class PlayerController : MonoBehaviour
     {
         backgroundImage.color = isDrawer ? drawer : defaultColor;
     }
+
+    public void ResetAnswers()
+    {
+        playerAnswers.text = "";
+    }
 }

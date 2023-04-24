@@ -16,6 +16,12 @@ public class StartButton : MonoBehaviour
             startGame.interactable = false;
         });
         PlayerLobbyController.OnDrawerSelect += OnDrawerSelect;
+        PlayerLobbyController.OnPlayerVictory += OnPlayerVictory;
+    }
+
+    private void OnPlayerVictory(string arg1, ulong arg2)
+    {
+        startGame.interactable = true;
     }
 
     private void OnDrawerSelect(ulong obj)
